@@ -10,6 +10,9 @@
 #include "usb_cdc.h"
 #include "kl_i2c.h"
 
+#include "VL53L1X.h"
+VL53L1X_t VL53L1X;
+
 #if 1 // ======================== Variables and defines ========================
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
@@ -19,9 +22,12 @@ void OnCmd(Shell_t *PShell);
 void ITask();
 
 #define RW_LEN_MAX  108
+#define PrintMeasurePeriod_MS 250
 
 const PinOutput_t PillPwr {PILL_PWR_PIN};
 LedRGB_t Led { LED_R_PIN, LED_G_PIN, LED_B_PIN };
+
+TmrKL_t PrintMeasTMR {MS2ST(PrintMeasurePeriod_MS), evtIdPrintMeasure, tktPeriodic};
 #endif
 
 int main(void) {
@@ -54,6 +60,15 @@ int main(void) {
     Clk.SelectUSBClock_HSI48();
     UsbCDC.Connect();
 
+
+    if(VL53L1X.Init() == retvOk) {
+        Printf("VL53L1X Ok\r");
+        VL53L1X.SetMeasTimingBudget_US(100000);
+        VL53L1X.SetDistanceMode(dmShort);
+        VL53L1X.StartMeasurement(100);
+        PrintMeasTMR.StartOrRestart();
+    }
+
     // Main cycle
     ITask();
 }
@@ -69,6 +84,12 @@ void ITask() {
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
+
+			case evtIdPrintMeasure:
+				uint16_t PDistance_MM;
+				VL53L1X.GetDistance(&PDistance_MM);
+				Printf("Distance %u\r", PDistance_MM);
+			    break;
 
 #if 1 // ======= USB =======
             case evtIdUsbConnect:
@@ -136,9 +157,12 @@ void OnCmd(Shell_t *PShell) {
     else if(PCmd->NameIs("W")) {
         uint8_t Addr, Len, Data[RW_LEN_MAX];
         if(PCmd->GetNext<uint8_t>(&Addr) == retvOk) {
+//        	PShell->Print("Addr ok\r\n");
             if(PCmd->GetNext<uint8_t>(&Len) == retvOk) {
+//            	PShell->Print("Len ok\r\n");
                 if(Len > RW_LEN_MAX) Len = RW_LEN_MAX;
                 if(PCmd->GetArray<uint8_t>(Data, Len) == retvOk) {
+//                	PShell->Print("Data ok\r\n");
                     Resume();
                     uint8_t Rslt = i2c2.Write(Addr, Data, Len);
                     Standby();
@@ -175,6 +199,16 @@ void OnCmd(Shell_t *PShell) {
             else PShell->Ack(retvCmdError);
         }
         else PShell->Ack(retvCmdError);
+    }
+
+
+    else if(PCmd->NameIs("SetMeasTimingBudget")) {
+    	uint32_t Data;
+//    	PCmd->GetNext<uint32_t>(&Data);
+//    	VL53L1X.SetMeasTimingBudget_US(Data);
+//    	PShell->Print("Data in %u\r\n", Data);
+    	VL53L1X.GetMeasTimingBudget_US(&Data);
+		PShell->Print("%Data out %u\r\n", Data);
     }
 
     else PShell->Ack(retvCmdUnknown);

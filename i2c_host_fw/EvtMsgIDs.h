@@ -10,6 +10,9 @@
 enum EvtMsgId_t {
     evtIdNone = 0, // Always
 
+	evtIdPrintMeasure,
+
+
     // Pretending to eternity
     evtIdShellCmd,
     evtIdEverySecond,
