@@ -19,7 +19,7 @@ uint8_t VL53L1X_t::Init(VL_IO_mode_t IO_mode) {
 		Printf("VL53L1 device ID does not match, %X\r", DevID);
 		return retvFail;
 	}
-//        Result |= Reset();
+//    Result |= Reset();
 	if (Result != retvOk) { Printf("WaitDeviceBooted Fail\r"); return retvFail; }
 
 // VL53L1_DataInit() begin
@@ -33,36 +33,11 @@ uint8_t VL53L1X_t::Init(VL_IO_mode_t IO_mode) {
 			Result |= WriteReg(VL53L1_PAD_I2C_HV__EXTSUP_CONFIG, RegValue);
 		}
 	}
+
 	// store oscillator info for later use
 	Result |= ReadReg16(VL53L1_OSC_MEASURED__FAST_OSC__FREQUENCY, &fast_osc_frequency);
     Result |= ReadReg16(VL53L1_RESULT__OSC_CALIBRATE_VAL, &osc_calibrate_val);
-#if 0
-	if (Status == VL53L1_ERROR_NONE) {
-		VL53L1DevDataSet(Dev, PalState, VL53L1_STATE_WAIT_STATICINIT);
-		VL53L1DevDataSet(Dev, CurrentParameters.PresetMode,
-				VL53L1_PRESETMODE_LOWPOWER_AUTONOMOUS);
-	}
-	/* Enable all check */
-	for (i = 0; i < VL53L1_CHECKENABLE_NUMBER_OF_CHECKS; i++) {
-		if (Status == VL53L1_ERROR_NONE)
-			Status |= VL53L1_SetLimitCheckEnable(Dev, i, 1);
-		else
-			break;
 
-	}
-	/* Limit default values */
-	if (Status == VL53L1_ERROR_NONE) {
-		Status = VL53L1_SetLimitCheckValue(Dev,
-			VL53L1_CHECKENABLE_SIGMA_FINAL_RANGE,
-				(FixPoint1616_t)(18 * 65536));
-	}
-	if (Status == VL53L1_ERROR_NONE) {
-		Status = VL53L1_SetLimitCheckValue(Dev,
-			VL53L1_CHECKENABLE_SIGNAL_RATE_FINAL_RANGE,
-				(FixPoint1616_t)(25 * 65536 / 100));
-				/* 0.25 * 65536 */
-	}
-#endif
 	if (Result != retvOk) { Printf("DataInit Fail\r"); return retvFail; }
 
 // VL53L1_StaticInit() begin
@@ -106,6 +81,33 @@ uint8_t VL53L1X_t::Init(VL_IO_mode_t IO_mode) {
 	Result |= WriteReg16(VL53L1_ALGO__PART_TO_PART_RANGE_OFFSET_MM, RegValue16 * 4);
 
 	if (Result != retvOk) { Printf("StaticInit Fail\r"); return retvFail; }
+	return Result;
+}
+
+uint8_t VL53L1X_t::Init2() {
+	uint8_t Result = retvOk;
+	Result |= WaitFwBootComplete();
+
+	for (uint8_t RegAddr = 0x2D; RegAddr <= 0x87; RegAddr++)
+		Result |= WriteReg(RegAddr, VL51L1X_DEFAULT_CONFIGURATION[RegAddr - 0x2D]);
+
+    Result |= StartMeasurement();
+    systime_t start = chVTGetSystemTimeX();
+	while (CheckForDataReady() == 0) {
+		chThdSleepMicroseconds(VL53L1_POLLING_DELAY_US);
+		if(chVTTimeElapsedSinceX(start) > MS2ST(3000)) {
+			Printf("VL53L1 CheckDataReady TimeOut\r");
+//			return retvTimeout;
+			break;
+		}
+	}
+	Result |= ClearInterrupt();
+	Result |= StopMeasurement();
+	Result |= WriteReg(VL53L1_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, 0x09); /* two bounds VHV */
+	Result |= WriteReg(VL53L1_VHV_CONFIG__INIT, 0); /* start VHV from the previous temperature */
+
+
+	Result |= StartMeasurement();
 	return Result;
 }
 

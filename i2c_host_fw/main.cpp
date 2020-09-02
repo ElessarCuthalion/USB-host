@@ -22,12 +22,12 @@ void OnCmd(Shell_t *PShell);
 void ITask();
 
 #define RW_LEN_MAX  108
-#define PrintMeasurePeriod_MS 250
+#define CheckMeasurePeriod_MS 10
 
 const PinOutput_t PillPwr {PILL_PWR_PIN};
 LedRGB_t Led { LED_R_PIN, LED_G_PIN, LED_B_PIN };
 
-TmrKL_t PrintMeasTMR {MS2ST(PrintMeasurePeriod_MS), evtIdPrintMeasure, tktPeriodic};
+TmrKL_t MeasTMR {MS2ST(CheckMeasurePeriod_MS), evtIdCheckMeasure, tktPeriodic};
 #endif
 
 int main(void) {
@@ -61,12 +61,9 @@ int main(void) {
     UsbCDC.Connect();
 
 
-    if(VL53L1X.Init() == retvOk) {
+    if(VL53L1X.Init2() == retvOk) {
         Printf("VL53L1X Ok\r");
-        VL53L1X.SetMeasTimingBudget_US(100000);
-        VL53L1X.SetDistanceMode(dmShort);
-        VL53L1X.StartMeasurement(100);
-        PrintMeasTMR.StartOrRestart();
+//        MeasTMR.StartOrRestart();
     }
 
     // Main cycle
@@ -85,10 +82,13 @@ void ITask() {
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
 
-			case evtIdPrintMeasure:
-				uint16_t PDistance_MM;
-				VL53L1X.GetDistance(&PDistance_MM);
-				Printf("Distance %u\r", PDistance_MM);
+			case evtIdCheckMeasure:
+				if (VL53L1X.CheckForDataReady()) {
+					uint16_t PDistance_MM;
+					VL53L1X.GetDistance(&PDistance_MM);
+					VL53L1X.ClearInterrupt();
+					Printf("Distance %u\r", PDistance_MM);
+				}
 			    break;
 
 #if 1 // ======= USB =======
@@ -201,14 +201,26 @@ void OnCmd(Shell_t *PShell) {
         else PShell->Ack(retvCmdError);
     }
 
+    else if(PCmd->NameIs("ChangeInterruptPolarity")) {
+    	static uint8_t IntPol = 0;
+    	if (IntPol == 0) {
+    		IntPol = 1;
+    		PShell->Ack(VL53L1X.SetInterruptPolarity(ipLow));
+    	}
+    	else {
+    		IntPol = 0;
+    		PShell->Ack(VL53L1X.SetInterruptPolarity(ipHigh));
+    	}
+    	PShell->Ack(VL53L1X.StartMeasurement());
+    }
 
-    else if(PCmd->NameIs("SetMeasTimingBudget")) {
-    	uint32_t Data;
-//    	PCmd->GetNext<uint32_t>(&Data);
-//    	VL53L1X.SetMeasTimingBudget_US(Data);
-//    	PShell->Print("Data in %u\r\n", Data);
-    	VL53L1X.GetMeasTimingBudget_US(&Data);
-		PShell->Print("%Data out %u\r\n", Data);
+    else if(PCmd->NameIs("GetDistance")) {
+//    	uint32_t Data;
+		uint16_t PDistance_MM = 0;
+//		VL53L1X.CheckForDataReady();
+		VL53L1X.GetDistance(&PDistance_MM);
+		VL53L1X.ClearInterrupt();
+		PShell->Print("Distance %u\r", PDistance_MM);
     }
 
     else PShell->Ack(retvCmdUnknown);

@@ -164,6 +164,9 @@ void PrintfHelper_t::IVsPrintf(const char *format, va_list args) {
             case 'u':
                 if(IPutUint(va_arg(args, uint32_t), 10, width, filler) != retvOk) goto End;
                 break;
+            case 'b':
+                if(IPutUint(va_arg(args, uint32_t), 2, width, filler) != retvOk) goto End;
+                break;
 
             case 'd':
             case 'i':

@@ -10,7 +10,7 @@
 enum EvtMsgId_t {
     evtIdNone = 0, // Always
 
-	evtIdPrintMeasure,
+	evtIdCheckMeasure,
 
 
     // Pretending to eternity
