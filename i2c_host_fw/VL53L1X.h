@@ -311,21 +311,6 @@ private:
     eventmask_t EvtEnd;
     virtual_timer_t TmrReadMeas;
 
-    uint8_t WriteCommand(uint8_t Command) {
-        return i2c1.Write(SHT_I2C_ADDR, &Command, 1);
-    }
-    uint8_t StartMeasurement(MeasureType_t AMeasType) {
-        uint8_t Result = retvFail;
-
-        return Result;
-    }
-    uint8_t ReadMeasurement(int32_t *value) {
-        MeasData_t MeasData;
-        uint8_t Result = retvOk;
-
-        return Result;
-    }
-
     void IIrqHandler() {
         chEvtSignalI(IPAppThd, EvtEnd);
     }
@@ -334,10 +319,11 @@ public:
     uint8_t Init(VL_IO_mode_t IO_mode = io2V8);
     uint8_t InitAndStart() {
     	uint8_t Result = retvOk;
-    	Result |= Init(io2V8);
-    	Result |= SetMeasTimingBudget_US(100000);
+//    	Result |= Init(io2V8);
+    	Result |= Init2();
+    	Result |= SetMeasTimingBudget_US(500000);
     	Result |= SetDistanceMode(dmShort);
-    	Result |= StartMeasurement(100);
+    	Result |= StartMeasurement(500);
     	return Result;
     }
     uint8_t Init2();
