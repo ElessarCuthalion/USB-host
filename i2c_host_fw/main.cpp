@@ -89,13 +89,13 @@ void ITask() {
 					temp = false;
 					if (VL53L1X.CheckForDataReady()) Printf("DataReady ok\r");
 					uint16_t PDistance_MM;
-					VL53L1X.StopMeasurement();
+					uint8_t RangeStatus;
+					VL53L1X.GetRangeStatus(&RangeStatus);
+					Printf("RangeStatus %u\r", RangeStatus);
 					VL53L1X.GetDistance(&PDistance_MM);
-					VL53L1X.ClearInterrupt();
 					Printf("Distance %u\r", PDistance_MM);
-//					uint8_t RangeStatus;
-//					VL53L1X.GetRangeStatus(&RangeStatus);
-//					Printf("VL53L1X_GetRangeStatus1 error %u\r", RangeStatus);
+					VL53L1X.ClearInterrupt();
+					VL53L1X.StopMeasurement();
 				}
 				else {
 					VL53L1X.StartMeasurement();
@@ -228,11 +228,11 @@ void OnCmd(Shell_t *PShell) {
 
     else if(PCmd->NameIs("GetDistance")) {
 //    	uint32_t Data;
-		uint16_t PDistance_MM = 0;
+		uint16_t Distance_MM = 0;
 //		VL53L1X.CheckForDataReady();
-		VL53L1X.GetDistance(&PDistance_MM);
+		VL53L1X.GetDistance(&Distance_MM);
 		VL53L1X.ClearInterrupt();
-		PShell->Print("Distance %u\r", PDistance_MM);
+		PShell->Print("Distance %u\r", Distance_MM);
     }
 
     else PShell->Ack(retvCmdUnknown);

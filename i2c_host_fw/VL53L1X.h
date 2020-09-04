@@ -326,9 +326,9 @@ public:
     uint8_t InitLiteAndStart() {
     	uint8_t Result = retvOk;
     	Result |= Init_lite();
-    	Result |= SetDistanceMode_lite(dmShort);
+    	Result |= SetDistanceMode_lite(dmLong);
     	Result |= SetMeasTimingBudget_lite_MS(100);
-    	Result |= StartMeasurement(25);
+    	Result |= StartMeasurement(100);
     	return Result;
     }
     uint8_t SetI2CAddress(uint8_t NewAddress) {
@@ -530,7 +530,7 @@ public:
     uint8_t StopMeasurement() {
     	return WriteReg(VL53L1_SYSTEM__MODE_START, 0x00);
     }
-    bool CheckForDataReady() {// VL53L1X_CheckForDataReady()
+    bool CheckForDataReady() {	// VL53L1X_CheckForDataReady()
     	uint8_t Result = retvOk;
 		uint8_t RegVal;
 		VLInterruptPolarity_t IntPol;
@@ -543,6 +543,9 @@ public:
 			return 0;
     }
     uint8_t GetDistance(uint16_t *PDistance_MM) {
+//    	uint16_t Distance_MM = 0;
+//    	ReadReg16(VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0, &Distance_MM);
+//    	Printf("Distance %u\r", Distance_MM);
     	return ReadReg16(VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0, PDistance_MM);
     }
     uint8_t GetRangeStatus(uint8_t *RangeStatus) {
