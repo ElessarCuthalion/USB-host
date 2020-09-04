@@ -214,12 +214,11 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("ChangeInterruptPolarity")) {
-    	static uint8_t IntPol = 0;
-    	if (IntPol == 0) {
-    		IntPol = 1;
-    	}
-    	else {
-    		IntPol = 0;
+    	static VLInterruptPolarity_t IntPol = ipLow;
+    	if (IntPol == ipLow) {
+    		IntPol = ipHigh;
+    	} else {
+    		IntPol = ipLow;
     	}
 		PShell->Ack(VL53L1X.SetInterruptPolarity(IntPol));
 		PShell->Ack(VL53L1X.GetInterruptPolarity(&IntPol));

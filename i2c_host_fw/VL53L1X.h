@@ -532,8 +532,8 @@ public:
     }
     bool CheckForDataReady() {// VL53L1X_CheckForDataReady()
     	uint8_t Result = retvOk;
-		uint8_t RegVal, IntPol;
-//		VLInterruptPolarity_t IntPol;
+		uint8_t RegVal;
+		VLInterruptPolarity_t IntPol;
 		Result |= GetInterruptPolarity(&IntPol);
 		Result |= ReadReg(VL53L1_GPIO__TIO_HV_STATUS, &RegVal);
 		/* Read in the register to check if a new value is available */
@@ -560,47 +560,26 @@ public:
     uint8_t ClearInterrupt() {
     	return WriteReg(VL53L1_SYSTEM__INTERRUPT_CLEAR, 0x01);	// sys_interrupt_clear_range
     }
-//    uint8_t SetInterruptPolarity(VLInterruptPolarity_t NewPolarity) {
-//    	uint8_t RegVal;
-//    	if (ReadReg(VL53L1_GPIO_HV_MUX__CTRL, &RegVal) == retvOk) {
-//    		RegVal = RegVal & 0xEF;
-//    		if (WriteReg(VL53L1_GPIO_HV_MUX__CTRL, RegVal | (!NewPolarity) << 4) == retvOk) {
-//    			return retvOk;
-//    		}
-//    		else return retvFail;
-//    	}
-//    	else return retvFail;
-//    }
-    uint8_t SetInterruptPolarity(uint8_t NewPolarity) {
+    uint8_t SetInterruptPolarity(VLInterruptPolarity_t NewPolarity) {
     	uint8_t RegVal;
     	if (ReadReg(VL53L1_GPIO_HV_MUX__CTRL, &RegVal) == retvOk) {
     		RegVal = RegVal & 0xEF;
-    		if (WriteReg(VL53L1_GPIO_HV_MUX__CTRL, RegVal | (!(NewPolarity & 1)) << 4) == retvOk) {
+    		if (WriteReg(VL53L1_GPIO_HV_MUX__CTRL, RegVal | (!NewPolarity) << 4) == retvOk) {
     			return retvOk;
     		}
     		else return retvFail;
     	}
     	else return retvFail;
     }
-//    uint8_t GetInterruptPolarity(VLInterruptPolarity_t *PIntPol) {
-//    	uint8_t RegVal;
-//    	if (ReadReg(VL53L1_GPIO_HV_MUX__CTRL, &RegVal) == retvOk) {
-//    		RegVal = RegVal & 0x10;
-//        	*(uint8_t*)PIntPol = !(RegVal>>4);
-//        	return retvOk;
-//    	}
-//    	else return retvFail;
-//    }
-    uint8_t GetInterruptPolarity(uint8_t *pInterruptPolarity) {
+    uint8_t GetInterruptPolarity(VLInterruptPolarity_t *PIntPol) {
     	uint8_t RegVal;
     	if (ReadReg(VL53L1_GPIO_HV_MUX__CTRL, &RegVal) == retvOk) {
-			RegVal = RegVal & 0x10;
-			*pInterruptPolarity = !(RegVal>>4);
-			return retvOk;
+    		RegVal = RegVal & 0x10;
+        	*(uint8_t*)PIntPol = !(RegVal>>4);
+        	return retvOk;
     	}
     	else return retvFail;
     }
-
 
     // VL53L1_WaitMeasurementDataReady()
 
