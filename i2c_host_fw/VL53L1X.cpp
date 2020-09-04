@@ -10,6 +10,7 @@
 
 uint8_t VL53L1X_t::Init(VL_IO_mode_t IO_mode) {
 	uint8_t Result = retvOk;
+	Result |= Reset();
 // VL53L1_WaitDeviceBooted() begin
 	Result |= WaitFwBootComplete();
 	// check model ID and module type registers
@@ -19,7 +20,6 @@ uint8_t VL53L1X_t::Init(VL_IO_mode_t IO_mode) {
 		Printf("VL53L1 device ID does not match, %X\r", DevID);
 		return retvFail;
 	}
-//    Result |= Reset();
 	if (Result != retvOk) { Printf("WaitDeviceBooted Fail\r"); return retvFail; }
 
 // VL53L1_DataInit() begin
@@ -73,19 +73,22 @@ uint8_t VL53L1X_t::Init(VL_IO_mode_t IO_mode) {
 	Result |= WriteReg(VL53L1_SYSTEM__SEQUENCE_CONFIG, 0x8B); // VHV, PHASECAL, DSS1, RANGE
 	Result |= WriteReg16(VL53L1_DSS_CONFIG__MANUAL_EFFECTIVE_SPADS_SELECT, 200 << 8);
 	Result |= WriteReg(VL53L1_DSS_CONFIG__ROI_MODE_CONTROL, 2); // REQUESTED_EFFFECTIVE_SPADS
-
-	// the API triggers this change in VL53L1_init_and_start_range() once a
-	// measurement is started; assumes MM1 and MM2 are disabled
 	uint16_t RegValue16 = 0;
 	Result |= ReadReg16(VL53L1_MM_CONFIG__OUTER_OFFSET_MM, &RegValue16);
+	Result |= SetDistanceMode(dmShort);
+	Result |= SetMeasTimingBudget_US(40000);
+	// the API triggers this change in VL53L1_init_and_start_range() once a
+	// measurement is started; assumes MM1 and MM2 are disabled
 	Result |= WriteReg16(VL53L1_ALGO__PART_TO_PART_RANGE_OFFSET_MM, RegValue16 * 4);
+	Result |= StartMeasurement();
 
 	if (Result != retvOk) { Printf("StaticInit Fail\r"); return retvFail; }
 	return Result;
 }
 
-uint8_t VL53L1X_t::Init2() {
+uint8_t VL53L1X_t::Init_lite() {
 	uint8_t Result = retvOk;
+	Result |= Reset();
 	Result |= WaitFwBootComplete();
 
 	for (uint8_t RegAddr = 0x2D; RegAddr <= 0x87; RegAddr++)
@@ -95,7 +98,7 @@ uint8_t VL53L1X_t::Init2() {
     systime_t start = chVTGetSystemTimeX();
 	while (CheckForDataReady() == 0) {
 		chThdSleepMicroseconds(VL53L1_POLLING_DELAY_US);
-		if(chVTTimeElapsedSinceX(start) > MS2ST(3000)) {
+		if(chVTTimeElapsedSinceX(start) > MS2ST(2000)) {
 			Printf("VL53L1 CheckDataReady TimeOut\r");
 //			return retvTimeout;
 			break;
@@ -106,8 +109,6 @@ uint8_t VL53L1X_t::Init2() {
 	Result |= WriteReg(VL53L1_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, 0x09); /* two bounds VHV */
 	Result |= WriteReg(VL53L1_VHV_CONFIG__INIT, 0); /* start VHV from the previous temperature */
 
-
-	Result |= StartMeasurement();
 	return Result;
 }
 
@@ -190,8 +191,8 @@ uint8_t VL53L1X_t::SetDistanceMode(VLDistanceMode_t DistanceMode) {	// VL53L1_Se
 			// dynamic config
 			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD0, 0x07);
 			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD1, 0x05);
-			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 6);	// tuning parm default
-			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 6);	// tuning parm default
+			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 0x06);	// tuning parm default
+			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 0x06);	// tuning parm default
             break;
         case dmMedium:
             // from VL53L1_preset_mode_standard_ranging()
@@ -202,8 +203,8 @@ uint8_t VL53L1X_t::SetDistanceMode(VLDistanceMode_t DistanceMode) {	// VL53L1_Se
 			// dynamic config
 			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD0, 0x0B);
 			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD1, 0x09);
-			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 10);	// tuning parm default
-			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 10);	// tuning parm default
+			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 0x0A);	// tuning parm default
+			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 0x0A);	// tuning parm default
             break;
         case dmLong:
             // from VL53L1_preset_mode_standard_ranging_long_range()
@@ -214,8 +215,8 @@ uint8_t VL53L1X_t::SetDistanceMode(VLDistanceMode_t DistanceMode) {	// VL53L1_Se
 			// dynamic config
 			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD0, 0x0F);
 			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD1, 0x0D);
-			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 14);	// tuning parm default
-			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 14);	// tuning parm default
+			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 0x0E);	// tuning parm default
+			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 0x0E);	// tuning parm default
             break;
     }
 
@@ -224,13 +225,3 @@ uint8_t VL53L1X_t::SetDistanceMode(VLDistanceMode_t DistanceMode) {	// VL53L1_Se
     	Result = SetMeasTimingBudget_US(MeasTiming_US);
     return Result;
 }
-//    uint8_t GetDistanceMode(VLDistanceMode_t DistanceMode) {	// VL53L1_GetDistanceMode()
-//    	uint16_t TempDM;
-//    	uint16_t DM=0;
-//    	TempDM = ReadRegister8(dev,VL53L1_PHASECAL_CONFIG__TIMEOUT_MACROP);
-//    	if (TempDM == 0x14)
-//    		DM=1;
-//    	if(TempDM == 0x0A)
-//    		DM=2;
-//    	return DM;
-//    }

@@ -128,7 +128,12 @@ const uint8_t VL51L1X_DEFAULT_CONFIGURATION[] = {
 	0x00, /* 0x86 : clear interrupt, use ClearInterrupt() */
 	0x00  /* 0x87 : start ranging, use StartRanging() or StopRanging(), If you want an automatic start after VL53L1X_init() call, put 0x40 in location 0x87 */
 };
-#define VL51L1X_DEFAULT_CONFIGURATION_SIZE	sizeof(VL51L1X_DEFAULT_CONFIGURATION)
+//#define VL51L1X_DEFAULT_CONFIGURATION_SIZE	sizeof(VL51L1X_DEFAULT_CONFIGURATION)
+static const uint8_t status_rtn[24] = {
+	255, 255, 255, 5, 2, 4, 1, 7, 3, 0,
+	255, 255, 9, 13, 255, 255, 255, 255, 10, 6,
+	255, 255, 11, 12
+};
 
 // value used in measurement timing budget calculations
 // assumes PresetMode is LOWPOWER_AUTONOMOUS
@@ -317,16 +322,15 @@ private:
 #endif
 public:
     uint8_t Init(VL_IO_mode_t IO_mode = io2V8);
-    uint8_t InitAndStart() {
+    uint8_t Init_lite();
+    uint8_t InitLiteAndStart() {
     	uint8_t Result = retvOk;
-//    	Result |= Init(io2V8);
-    	Result |= Init2();
-    	Result |= SetMeasTimingBudget_US(500000);
-    	Result |= SetDistanceMode(dmShort);
-    	Result |= StartMeasurement(500);
+    	Result |= Init_lite();
+    	Result |= SetDistanceMode_lite(dmShort);
+    	Result |= SetMeasTimingBudget_lite_MS(100);
+    	Result |= StartMeasurement(25);
     	return Result;
     }
-    uint8_t Init2();
     uint8_t SetI2CAddress(uint8_t NewAddress) {
     	return WriteReg(VL53L1_I2C_SLAVE__DEVICE_ADDRESS, NewAddress);
     }
@@ -336,13 +340,189 @@ public:
 
     uint8_t SetMeasTimingBudget_US(uint32_t MeasTiming_US);
     uint8_t GetMeasTimingBudget_US(uint32_t *MeasTiming_US);
+    uint8_t SetMeasTimingBudget_lite_MS(uint16_t MeasTiming_MS) {
+    	uint8_t Result = retvOk;
+    	VLDistanceMode_t DistanceMode;
+    	Result |= GetDistanceMode_lite(&DistanceMode);
+    	if (DistanceMode == dmShort) {
+    		switch (MeasTiming_MS) {
+    		case 15: /* only available in short distance mode */
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x01D);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x0027);
+    			break;
+    		case 20:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x0051);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x006E);
+    			break;
+    		case 33:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x00D6);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x006E);
+    			break;
+    		case 50:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x1AE);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x01E8);
+    			break;
+    		case 100:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x02E1);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x0388);
+    			break;
+    		case 200:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x03E1);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x0496);
+    			break;
+    		case 500:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x0591);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x05C1);
+    			break;
+    		default:
+    			Printf("VL MeasTiming_MS is BadValue\r");
+    			return retvBadValue;
+    			break;
+    		}
+    	}
+		if (DistanceMode == dmLong) {
+    		switch (MeasTiming_MS) {
+    		case 20:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x001E);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x0022);
+    			break;
+    		case 33:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x0060);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x006E);
+    			break;
+    		case 50:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x00AD);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x00C6);
+    			break;
+    		case 100:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x01CC);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x01EA);
+    			break;
+    		case 200:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x02D9);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x02F8);
+    			break;
+    		case 500:
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, 0x048F);
+    			Result |= WriteReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_B_HI, 0x04A4);
+    			break;
+    		default:
+    			Printf("VL MeasTiming_MS is BadValue\r");
+    			return retvBadValue;
+    			break;
+    		}
+    	}
+    	return Result;
+    }
+    uint8_t GetMeasTimingBudget_lite_MS(uint16_t *MeasTiming_MS) {
+    	uint16_t RegVaule;
+    	if (ReadReg16(VL53L1_RANGE_CONFIG__TIMEOUT_MACROP_A_HI, &RegVaule) == retvOk) {
+			switch (RegVaule) {
+				case 0x001D :
+					*MeasTiming_MS = 15;
+					break;
+				case 0x0051 :
+				case 0x001E :
+					*MeasTiming_MS = 20;
+					break;
+				case 0x00D6 :
+				case 0x0060 :
+					*MeasTiming_MS = 33;
+					break;
+				case 0x1AE :
+				case 0x00AD :
+					*MeasTiming_MS = 50;
+					break;
+				case 0x02E1 :
+				case 0x01CC :
+					*MeasTiming_MS = 100;
+					break;
+				case 0x03E1 :
+				case 0x02D9 :
+					*MeasTiming_MS = 200;
+					break;
+				case 0x0591 :
+				case 0x048F :
+					*MeasTiming_MS = 500;
+					break;
+				default:
+					Printf("VL GetMeasTimingBudget_Simple Failed\r");
+					return retvFail;
+					break;
+			}
+			return retvOk;
+    	}
+    	else
+    		return retvFail;
+    }
 
     uint8_t SetDistanceMode(VLDistanceMode_t DistanceMode);
+    uint8_t SetDistanceMode_lite(VLDistanceMode_t DistanceMode) {
+    	uint8_t Result = retvOk;
+        // save existing timing budget
+        uint16_t MeasTiming_MS;
+        Result |= GetMeasTimingBudget_lite_MS(&MeasTiming_MS);
+        switch (DistanceMode) {
+          case dmShort:
+      			// timing config
+      			Result |= WriteReg(VL53L1_PHASECAL_CONFIG__TIMEOUT_MACROP, 0x14);
+                Result |= WriteReg(VL53L1_RANGE_CONFIG__VCSEL_PERIOD_A, 0x07);
+                Result |= WriteReg(VL53L1_RANGE_CONFIG__VCSEL_PERIOD_B, 0x05);
+                Result |= WriteReg(VL53L1_RANGE_CONFIG__VALID_PHASE_HIGH, 0x38);
+    			// dynamic config
+    			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD0, 0x07);
+    			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD1, 0x05);
+    			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 0x06);	// tuning parm default
+    			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 0x06);	// tuning parm default
+                break;
+            case dmLong:
+            	// timing config
+            	Result |= WriteReg(VL53L1_PHASECAL_CONFIG__TIMEOUT_MACROP, 0x0A);
+            	Result |= WriteReg(VL53L1_RANGE_CONFIG__VCSEL_PERIOD_A, 0x0F);
+    			Result |= WriteReg(VL53L1_RANGE_CONFIG__VCSEL_PERIOD_B, 0x0D);
+    			Result |= WriteReg(VL53L1_RANGE_CONFIG__VALID_PHASE_HIGH, 0xB8);
+    			// dynamic config
+    			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD0, 0x0F);
+    			Result |= WriteReg(VL53L1_SD_CONFIG__WOI_SD1, 0x0D);
+    			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD0, 0x0E);	// tuning parm default
+    			Result |= WriteReg(VL53L1_SD_CONFIG__INITIAL_PHASE_SD1, 0x0E);	// tuning parm default
+                break;
+            default:
+            	Printf("VL DistanceMode is BadValue\r");
+            	return retvBadValue;
+            	break;
+        }
+        // reapply timing budget
+        if (Result == retvOk)
+        	Result = SetMeasTimingBudget_lite_MS(MeasTiming_MS);
+        return Result;
+    }
+    uint8_t GetDistanceMode_lite(VLDistanceMode_t *PDistanceMode) {
+    	uint8_t RegVal;
+    	if (ReadReg(VL53L1_PHASECAL_CONFIG__TIMEOUT_MACROP, &RegVal) == retvOk) {
+			switch (RegVal) {
+				case 0x14:
+					*PDistanceMode = dmShort;
+					break;
+				case 0x0A:
+					*PDistanceMode = dmLong;
+					break;
+				default:
+					Printf("VL DistanceMode is BadValue\r");
+					return retvBadValue;
+					break;
+			}
+            return retvOk;
+    	}
+    	else
+    		return retvFail;
+    }
+
 
     // Start continuous ranging measurements, with the given inter-measurement.
     uint8_t StartMeasurement(uint32_t MeasPeriod_MS = 0) {	    // VL53L1_ClearInterruptAndStartMeasurement()
     	uint8_t Result = retvOk;
-//    	Result |= SetMeasurmentPeriod(MeasPeriod_MS);
+    	Result |= SetMeasurmentPeriod(MeasPeriod_MS);
         Result |= ClearInterrupt();
 		Result |= WriteReg(VL53L1_SYSTEM__MODE_START, 0x40);		// mode_range__timed
 		return Result;
@@ -364,6 +544,17 @@ public:
     }
     uint8_t GetDistance(uint16_t *PDistance_MM) {
     	return ReadReg16(VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0, PDistance_MM);
+    }
+    uint8_t GetRangeStatus(uint8_t *RangeStatus) {
+    	uint8_t RgSt;
+    	*RangeStatus = 255;
+    	if (ReadReg(VL53L1_RESULT__RANGE_STATUS, &RgSt) == retvOk) {
+			RgSt = RgSt & 0x1F;
+			if (RgSt < 24)
+				*RangeStatus = status_rtn[RgSt];
+			return retvOk;
+    	}
+    	else return retvFail;
     }
 
     uint8_t ClearInterrupt() {

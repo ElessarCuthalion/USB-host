@@ -61,8 +61,8 @@ int main(void) {
     UsbCDC.Connect();
 
 
-//    if(VL53L1X.InitAndStart() == retvOk) {
-    if(VL53L1X.Init2() == retvOk) {
+    if(VL53L1X.InitLiteAndStart() == retvOk) {
+//    if(VL53L1X.Init() == retvOk) {
         Printf("VL53L1X Ok\r");
         MeasTMR.StartOrRestart();
     }
@@ -87,12 +87,15 @@ void ITask() {
 				static bool temp = true;
 				if (temp) {
 					temp = false;
-//				if (VL53L1X.CheckForDataReady()) {
+					if (VL53L1X.CheckForDataReady()) Printf("DataReady ok\r");
 					uint16_t PDistance_MM;
 					VL53L1X.StopMeasurement();
 					VL53L1X.GetDistance(&PDistance_MM);
 					VL53L1X.ClearInterrupt();
 					Printf("Distance %u\r", PDistance_MM);
+//					uint8_t RangeStatus;
+//					VL53L1X.GetRangeStatus(&RangeStatus);
+//					Printf("VL53L1X_GetRangeStatus1 error %u\r", RangeStatus);
 				}
 				else {
 					VL53L1X.StartMeasurement();
@@ -211,15 +214,16 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("ChangeInterruptPolarity")) {
-    	static uint8_t IntPol = 1;
+    	static uint8_t IntPol = 0;
     	if (IntPol == 0) {
     		IntPol = 1;
-    		PShell->Ack(VL53L1X.SetInterruptPolarity(ipLow));
     	}
     	else {
     		IntPol = 0;
-    		PShell->Ack(VL53L1X.SetInterruptPolarity(ipHigh));
     	}
+		PShell->Ack(VL53L1X.SetInterruptPolarity(IntPol));
+		PShell->Ack(VL53L1X.GetInterruptPolarity(&IntPol));
+		PShell->Print("InterruptPolarity %u\r", IntPol);
 //    	PShell->Ack(VL53L1X.StartMeasurement());
     }
 
