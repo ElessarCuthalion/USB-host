@@ -13,6 +13,14 @@
 #include "VL53L1X.h"
 VL53L1X_t VL53L1X;
 
+#define VL53L1_api
+#ifdef VL53L1_api
+#include "vl53l1_api.h"
+#include "vl53l1_platform.h"
+#include "vl53l1_platform_user_data.h"
+VL53L1_Dev_t Dev;
+#endif
+
 #if 1 // ======================== Variables and defines ========================
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
@@ -60,7 +68,11 @@ int main(void) {
     Clk.SelectUSBClock_HSI48();
     UsbCDC.Connect();
 
-
+#ifdef VL53L1_api
+//	Dev.I2cHandle = &i2c2;
+	Dev.I2cDevAddr = 0x52;
+	VL53L1_WaitDeviceBooted(&Dev);
+#endif
     if(VL53L1X.InitLiteAndStart() == retvOk) {
 //    if(VL53L1X.Init() == retvOk) {
         Printf("VL53L1X Ok\r");

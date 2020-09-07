@@ -46,6 +46,9 @@
 									<listOptionValue builtIn="false" value="../usb"/>
 									<listOptionValue builtIn="false" value=".././"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
+									<listOptionValue builtIn="false" value="../VL53L1X_api/core"/>
+									<listOptionValue builtIn="false" value="../VL53L1X_api/platform"/>
+									<listOptionValue builtIn="false" value="../VL53L1X_api"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.964749707" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.1059019833" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F072C8" valueType="enumerated"/>
@@ -76,6 +79,9 @@
 									<listOptionValue builtIn="false" value=".././"/>
 									<listOptionValue builtIn="false" value="../Radio"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
+									<listOptionValue builtIn="false" value="../VL53L1X_api"/>
+									<listOptionValue builtIn="false" value="../VL53L1X_api/platform"/>
+									<listOptionValue builtIn="false" value="../VL53L1X_api/core"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.1211546471" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.493528901" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F072C8" valueType="enumerated"/>
@@ -286,14 +292,14 @@
 		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.configuration.release.199420662;com.atollic.truestudio.configuration.release.199420662.;com.atollic.truestudio.exe.release.toolchain.gcc.379603421;com.atollic.truestudio.gcc.input.1971889988">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileC"/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.configuration.release.199420662;com.atollic.truestudio.configuration.release.199420662.;com.atollic.truestudio.exe.release.toolchain.gpp.33585564;com.atollic.truestudio.gpp.input.996905910">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.exe.debug.311430134;com.atollic.truestudio.exe.debug.311430134.;com.atollic.truestudio.exe.debug.toolchain.gpp.313911104;com.atollic.truestudio.gpp.input.1958177155">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.exe.debug.311430134;com.atollic.truestudio.exe.debug.311430134.;com.atollic.truestudio.exe.debug.toolchain.gcc.685876036;com.atollic.truestudio.gcc.input.731158929">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileC"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.configuration.release.199420662;com.atollic.truestudio.configuration.release.199420662.;com.atollic.truestudio.exe.release.toolchain.gpp.33585564;com.atollic.truestudio.gpp.input.996905910">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>
