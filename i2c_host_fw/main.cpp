@@ -6,11 +6,11 @@
 #include "kl_lib.h"
 #include "led.h"
 #include "Sequences.h"
-#include "radio_lvl1.h"
+//#include "radio_lvl1.h"
 #include "usb_cdc.h"
 #include "kl_i2c.h"
 
-#define VL53L1_api
+//#define VL53L1_api_FULL
 #define VL53L1_my
 
 
@@ -19,14 +19,16 @@
 VL53L1X_t VL53L1X;
 #endif
 
-#ifdef VL53L1_api
+#ifdef VL53L1_api_FULL
 #include "vl53l1_api.h"
 #include "vl53l1_platform.h"
 #include "vl53l1_platform_user_data.h"
 VL53L1_Dev_t Dev;
 VL53L1_DetectionConfig_t DetectionConfig;
-#elif VL53L1_api_lite
-
+#else
+#include "VL53L1X_api.h"
+//#include "vl53l1_platform.h"
+//#include "VL53L1X_calibration.h"
 #endif
 
 #if 1 // ======================== Variables and defines ========================
@@ -76,10 +78,10 @@ int main(void) {
     Clk.SelectUSBClock_HSI48();
     UsbCDC.Connect();
 
-#ifdef VL53L1_api
+	uint8_t Result = retvOk;
+#ifdef VL53L1_api_FULL
 //	Dev.I2cHandle = &i2c2;
 	Dev.I2cDevAddr = 0x29;
-	uint8_t Result = retvOk;
 
 	Result |= VL53L1_WaitDeviceBooted(&Dev);
 	Result |= VL53L1_DataInit(&Dev);
@@ -95,7 +97,15 @@ int main(void) {
 	DetectionConfig.Distance.Low = 50;
 	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
 //	Result |= VL53L1_StartMeasurement(&Dev);
-
+#else
+	uint16_t DevAddr = 0x29;
+	chThdSleepMilliseconds(VL53L1_BOOT_COMPLETION_POLLING_TIMEOUT_MS);
+//	VL53L1X_ERROR err = 0;
+	Result |= VL53L1X_SensorInit(DevAddr);
+	Result |= VL53L1X_SetInterMeasurementInMs(DevAddr, 100);
+	Result |= VL53L1X_SetOffset(DevAddr, 10);
+	Result |= VL53L1X_StartRanging(DevAddr);
+#endif
     if(Result == retvOk)
     	Printf("VL53L1X Ok\r");
     else
@@ -103,13 +113,13 @@ int main(void) {
 
     VL53L1X.StartMeasurement(100);
 
-#else
+
+
 #ifdef VL53L1_my
     if(VL53L1X.InitLiteAndStart() == retvOk) {
 //    if(VL53L1X.Init() == retvOk) {
         Printf("VL53L1X Ok\r");
     }
-#endif
 #endif
     MeasTMR.StartOrRestart();
 
@@ -133,6 +143,9 @@ void ITask() {
 				static bool temp = true;
 				if (temp) {
 					temp = false;
+//					Status = VL53L1X_GetRangeStatus();
+//					Status = VL53L1X_GetDistance();
+//					Status = VL53L1X_ClearInterrupt();
 #ifdef VL53L1_my
 					if (VL53L1X.CheckForDataReady()) Printf("DataReady ok\r");
 					uint16_t PDistance_MM;
