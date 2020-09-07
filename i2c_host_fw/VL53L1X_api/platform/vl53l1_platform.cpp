@@ -125,65 +125,89 @@ VL53L1_Error VL53L1_WriteMulti(VL53L1_DEV Dev, uint16_t index, uint8_t *pdata, u
     _I2CBuffer[0] = index >> 8;
     _I2CBuffer[1] = index & 0xFF;
     memcpy(&_I2CBuffer[2], pdata, count);
-    VL53L1_i2c.Write(Dev->I2cDevAddr, _I2CBuffer, count+2);
+    Status |= VL53L1_i2c.Write(Dev->I2cDevAddr, _I2CBuffer, count+2);
     return Status;
 }
 
 // the ranging_sensor_comms.dll will take care of the page selection
 VL53L1_Error VL53L1_ReadMulti(VL53L1_DEV Dev, uint16_t index, uint8_t *pdata, uint32_t count) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
     uint8_t RegAddr[2];
     RegAddr[0] = index >> 8;
     RegAddr[1] = index & 0xFF;
-    VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, pdata, count);
-    return Status;
+    return VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, pdata, count);
 }
 
-VL53L1_Error VL53L1_WrByte(VL53L1_DEV Dev, uint16_t index, uint8_t adata) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
+VL53L1_Error VL53L1_WrByte(VL53L1_DEV Dev, uint16_t ARegAddr, uint8_t AValue) {
     uint8_t Data[3];
-    Data[0] = index >> 8;
-    Data[1] = index & 0xFF;
-    Data[2] = adata;
-    VL53L1_i2c.Write(Dev->I2cDevAddr, Data, 3);
-    return Status;
+    Data[0] = ARegAddr >> 8;
+    Data[1] = ARegAddr & 0xFF;
+    Data[2] = AValue;
+    return VL53L1_i2c.Write(Dev->I2cDevAddr, Data, 3);
 }
 
-VL53L1_Error VL53L1_WrWord(VL53L1_DEV Dev, uint16_t index, uint16_t data) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
-    return Status;
+VL53L1_Error VL53L1_WrWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint16_t AValue) {
+    uint8_t Data[3];
+    Data[0] = ARegAddr >> 8;
+    Data[1] = ARegAddr & 0xFF;
+    Data[2] = AValue >> 8;
+    Data[3] = AValue & 0xFF;
+    return VL53L1_i2c.Write(Dev->I2cDevAddr, Data, 4);
 }
 
-VL53L1_Error VL53L1_WrDWord(VL53L1_DEV Dev, uint16_t index, uint32_t data) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
-    return Status;
+VL53L1_Error VL53L1_WrDWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint32_t AValue) {
+    uint8_t Data[5];
+    Data[0] = ARegAddr >> 8;
+    Data[1] = ARegAddr & 0xFF;
+    Data[2] = AValue >> 24;
+    Data[3] = (AValue >> 16) & 0xFF;
+    Data[4] = (AValue >> 8) & 0xFF;
+    Data[5] = AValue & 0xFF;
+    return VL53L1_i2c.Write(Dev->I2cDevAddr, Data, 6);
 }
 
 VL53L1_Error VL53L1_UpdateByte(VL53L1_DEV Dev, uint16_t index, uint8_t AndData, uint8_t OrData) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
-    return Status;
+    uint8_t data;
+    VL53L1_Error status = VL53L1_RdByte(Dev, index, &data);
+    if (status != VL53L1_ERROR_NONE) { return status; }
+    data &= AndData;
+    data |= OrData;
+    return VL53L1_WrByte(Dev, index, data);
 }
 
-VL53L1_Error VL53L1_RdByte(VL53L1_DEV Dev, uint16_t index, uint8_t *data) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
-    return Status;
+VL53L1_Error VL53L1_RdByte(VL53L1_DEV Dev, uint16_t ARegAddr, uint8_t *APValue) {
+    uint8_t RegAddr[2];
+    RegAddr[0] = ARegAddr >> 8;
+    RegAddr[1] = ARegAddr & 0xFF;
+	return VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, APValue, 1);
 }
 
-VL53L1_Error VL53L1_RdWord(VL53L1_DEV Dev, uint16_t index, uint16_t *data) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
-    return Status;
+VL53L1_Error VL53L1_RdWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint16_t *APValue) {
+    uint8_t RegAddr[2], ReadData[2];
+    RegAddr[0] = ARegAddr >> 8;
+    RegAddr[1] = ARegAddr & 0x00FF;
+    VL53L1_Error status = VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, ReadData, 2);
+    if (status == VL53L1_ERROR_NONE)
+        *APValue = ((uint16_t)ReadData[0]<<8)|ReadData[1];
+    return status;
 }
 
-VL53L1_Error VL53L1_RdDWord(VL53L1_DEV Dev, uint16_t index, uint32_t *data) {
-    VL53L1_Error Status = VL53L1_ERROR_NONE;
-    return Status;
+VL53L1_Error VL53L1_RdDWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint32_t *APValue) {
+    uint8_t RegAddr[2], ReadData[4];
+    RegAddr[0] = ARegAddr >> 8;
+    RegAddr[1] = ARegAddr & 0x00FF;
+    VL53L1_Error status = VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, ReadData, 4);
+    if (status == VL53L1_ERROR_NONE) {
+        *APValue = (uint32_t)ReadData[0]<<24;
+        *APValue |= (uint32_t)ReadData[1]<<16;
+        *APValue |= (uint16_t)ReadData[2]<<8;
+        *APValue |= ReadData[3];
+    }
+    return status;
 }
 
-VL53L1_Error VL53L1_GetTickCount(
-	uint32_t *ptick_count_ms)
-{
-	VL53L1_Error status  = VL53L1_ERROR_NONE;
-	return status;
+VL53L1_Error VL53L1_GetTickCount(uint32_t *ptick_count_ms) {
+	*ptick_count_ms = chVTGetSystemTimeX();
+	return VL53L1_ERROR_NONE;
 }
 
 //#define trace_print(level, ...) \
@@ -194,20 +218,18 @@ VL53L1_Error VL53L1_GetTickCount(
 //	_LOG_TRACE_PRINT(VL53L1_TRACE_MODULE_NONE, \
 //	VL53L1_TRACE_LEVEL_NONE, VL53L1_TRACE_FUNCTION_I2C, ##__VA_ARGS__)
 
-VL53L1_Error VL53L1_GetTimerFrequency(int32_t *ptimer_freq_hz)
-{
-	VL53L1_Error status  = VL53L1_ERROR_NONE;
-	return status;
+VL53L1_Error VL53L1_GetTimerFrequency(int32_t *ptimer_freq_hz) {
+	return VL53L1_ERROR_NOT_IMPLEMENTED;
 }
 
-VL53L1_Error VL53L1_WaitMs(VL53L1_Dev_t *pdev, int32_t wait_ms){
-	VL53L1_Error status  = VL53L1_ERROR_NONE;
-	return status;
+VL53L1_Error VL53L1_WaitMs(VL53L1_Dev_t *pdev, int32_t wait_ms) {
+	chThdSleepMilliseconds(wait_ms);
+	return VL53L1_ERROR_NONE;
 }
 
-VL53L1_Error VL53L1_WaitUs(VL53L1_Dev_t *pdev, int32_t wait_us){
-	VL53L1_Error status  = VL53L1_ERROR_NONE;
-	return status;
+VL53L1_Error VL53L1_WaitUs(VL53L1_Dev_t *pdev, int32_t wait_us) {
+	chThdSleepMicroseconds(wait_us);
+	return VL53L1_ERROR_NONE;
 }
 
 VL53L1_Error VL53L1_WaitValueMaskEx(
@@ -218,8 +240,17 @@ VL53L1_Error VL53L1_WaitValueMaskEx(
 	uint8_t       mask,
 	uint32_t      poll_delay_ms)
 {
-	VL53L1_Error status  = VL53L1_ERROR_NONE;
-	return status;
+
+	uint8_t data;
+	VL53L1_Error status;
+	systime_t start = chVTGetSystemTimeX();
+	while (chVTTimeElapsedSinceX(start) < timeout_ms) {
+	    status = VL53L1_RdByte(pdev, index, &data);
+	    if (status != VL53L1_ERROR_NONE) { return status; }
+	    if ((data & mask) == value) { return VL53L1_ERROR_NONE; }
+	    chThdSleepMilliseconds(poll_delay_ms);
+	  }
+	return VL53L1_ERROR_TIME_OUT;
 }
 
 

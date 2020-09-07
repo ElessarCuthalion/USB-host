@@ -114,5 +114,7 @@
 
 #define VL53L1_MAX_STRING_LENGTH 512
 
+#define USE_I2C_2V8
+
 #endif  /* _VL53L1_PLATFORM_USER_CONFIG_H_ */
 

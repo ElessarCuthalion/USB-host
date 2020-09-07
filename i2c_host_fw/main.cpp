@@ -19,6 +19,7 @@ VL53L1X_t VL53L1X;
 #include "vl53l1_platform.h"
 #include "vl53l1_platform_user_data.h"
 VL53L1_Dev_t Dev;
+VL53L1_DetectionConfig_t DetectionConfig;
 #endif
 
 #if 1 // ======================== Variables and defines ========================
@@ -71,13 +72,37 @@ int main(void) {
 #ifdef VL53L1_api
 //	Dev.I2cHandle = &i2c2;
 	Dev.I2cDevAddr = 0x52;
-	VL53L1_WaitDeviceBooted(&Dev);
-#endif
+	uint8_t Result = retvOk;
+
+	Result |= VL53L1_WaitDeviceBooted(&Dev);
+	Result |= VL53L1_DataInit(&Dev);
+	Result |= VL53L1_StaticInit(&Dev);
+//	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
+//	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_LONG);
+//	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 70000);
+//	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 100);
+//	DetectionConfig.DetectionMode = 0;
+//	DetectionConfig.Distance.CrossMode = 3;
+//	DetectionConfig.IntrNoTarget = 0;
+//	DetectionConfig.Distance.High = 4000;
+//	DetectionConfig.Distance.Low = 50;
+//	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
+//	Result |= VL53L1_StartMeasurement(&Dev);
+
+    if(Result == retvOk)
+    	Printf("VL53L1X Ok\r");
+    else
+    	Printf("VL53L1X init Fail\r");
+
+    VL53L1X.StartMeasurement(100);
+
+#else
     if(VL53L1X.InitLiteAndStart() == retvOk) {
 //    if(VL53L1X.Init() == retvOk) {
         Printf("VL53L1X Ok\r");
-        MeasTMR.StartOrRestart();
     }
+#endif
+    MeasTMR.StartOrRestart();
 
     // Main cycle
     ITask();
@@ -176,7 +201,7 @@ void OnCmd(Shell_t *PShell) {
     else if(PCmd->NameIs("Scan")) {
         i2c2.ScanBus(PShell);
     }
-
+#if 0
     // W <Addr> <Len <= 108 > (Data1, Data2, ..., DataLen)
     else if(PCmd->NameIs("W")) {
         uint8_t Addr, Len, Data[RW_LEN_MAX];
@@ -224,7 +249,7 @@ void OnCmd(Shell_t *PShell) {
         }
         else PShell->Ack(retvCmdError);
     }
-
+#endif
     else if(PCmd->NameIs("ChangeInterruptPolarity")) {
     	static VLInterruptPolarity_t IntPol = ipLow;
     	if (IntPol == ipLow) {
