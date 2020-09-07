@@ -174,44 +174,44 @@ private:
 		bool IsMeasurement = false;
 	} SensState;
 	uint8_t I2C_ADDR = VL_I2C_DeffAddr;
-    uint8_t ReadReg(uint16_t ARegAddr, uint8_t *AValue) {
+    uint8_t ReadReg(uint16_t ARegAddr, uint8_t *APValue) {
         uint8_t RegAddr[2];
         RegAddr[0] = ARegAddr >> 8;
-        RegAddr[1] = ARegAddr & 0x00FF;
-    	return VL_i2c.WriteRead(I2C_ADDR, RegAddr, 2, AValue, 1);
+        RegAddr[1] = ARegAddr & 0xFF;
+    	return VL_i2c.WriteRead(I2C_ADDR, RegAddr, 2, APValue, 1);
     }
-    uint8_t ReadReg16(uint16_t ARegAddr, uint16_t *AValue) {
+    uint8_t ReadReg16(uint16_t ARegAddr, uint16_t *APValue) {
         uint8_t RegAddr[2], ReadData[2];
         RegAddr[0] = ARegAddr >> 8;
-        RegAddr[1] = ARegAddr & 0x00FF;
+        RegAddr[1] = ARegAddr & 0xFF;
         uint8_t Result = VL_i2c.WriteRead(I2C_ADDR, RegAddr, 2, ReadData, 2);
         if (Result == retvOk)
-            *AValue = (ReadData[0]<<8)|ReadData[1];
+            *APValue = ((uint16_t)ReadData[0]<<8)|ReadData[1];
         return Result;
     }
     uint8_t WriteReg(uint16_t ARegAddr, uint8_t AValue) {
         uint8_t Data[3];
         Data[0] = ARegAddr >> 8;
-        Data[1] = ARegAddr & 0x00FF;
+        Data[1] = ARegAddr & 0xFF;
         Data[2] = AValue;
         return VL_i2c.Write(I2C_ADDR, Data, 3);
     }
     uint8_t WriteReg16(uint16_t ARegAddr, uint16_t AValue) {
         uint8_t Data[3];
         Data[0] = ARegAddr >> 8;
-        Data[1] = ARegAddr & 0x00FF;
+        Data[1] = ARegAddr & 0xFF;
         Data[2] = AValue >> 8;
-        Data[3] = AValue & 0x00FF;
+        Data[3] = AValue & 0xFF;
         return VL_i2c.Write(I2C_ADDR, Data, 4);
     }
     uint8_t WriteReg32(uint16_t ARegAddr, uint32_t AValue) {
             uint8_t Data[5];
             Data[0] = ARegAddr >> 8;
-            Data[1] = ARegAddr & 0x00FF;
+            Data[1] = ARegAddr & 0xFF;
             Data[2] = AValue >> 24;
-            Data[3] = (AValue >> 16) & 0x000000FF;
-            Data[4] = (AValue >> 8) & 0x000000FF;
-            Data[5] = AValue & 0x000000FF;
+            Data[3] = (AValue >> 16) & 0xFF;
+            Data[4] = (AValue >> 8) & 0xFF;
+            Data[5] = AValue & 0xFF;
             return VL_i2c.Write(I2C_ADDR, Data, 6);
         }
 
