@@ -21,8 +21,6 @@ VL53L1X_t VL53L1X;
 
 #ifdef VL53L1_api_FULL
 #include "vl53l1_api.h"
-//#include "vl53l1_platform.h"
-//#include "vl53l1_platform_user_data.h"
 VL53L1_Dev_t Dev;
 VL53L1_DetectionConfig_t DetectionConfig;
 #else
@@ -40,7 +38,7 @@ void OnCmd(Shell_t *PShell);
 void ITask();
 
 #define RW_LEN_MAX  108
-#define CheckMeasurePeriod_MS 500
+#define CheckMeasurePeriod_MS 100
 
 const PinOutput_t PillPwr {PILL_PWR_PIN};
 //LedRGB_t Led { LED_R_PIN, LED_G_PIN, LED_B_PIN };
@@ -70,6 +68,7 @@ int main(void) {
 
     PillPwr.Init();
     PillPwr.SetHi();
+    chThdSleepMilliseconds(300);
 
     i2c2.Init();
 
@@ -107,12 +106,9 @@ int main(void) {
 	Result |= VL53L1X_StartRanging(DevAddr);
 #endif
     if(Result == retvOk)
-    	Printf("VL53L1X Ok\r");
+    	Printf("VL53L1X init Ok\r");
     else
     	Printf("VL53L1X init Fail\r");
-
-//    VL53L1X.StartMeasurement(100);
-
 
 #ifdef VL53L1_my
     if(VL53L1X.InitLiteAndStart() == retvOk) {
@@ -148,13 +144,14 @@ void ITask() {
 					Printf("Distance %u Status %u\r", RangingData.RangeMilliMeter, RangingData.RangeStatus);
 				}
 
+#ifdef VL53L1_my
 				static bool temp = true;
 				if (temp) {
 					temp = false;
 //					Status = VL53L1X_GetRangeStatus();
 //					Status = VL53L1X_GetDistance();
 //					Status = VL53L1X_ClearInterrupt();
-#ifdef VL53L1_my
+
 					if (VL53L1X.CheckForDataReady()) Printf("DataReady ok\r");
 					uint16_t PDistance_MM;
 					uint8_t RangeStatus;
@@ -164,13 +161,11 @@ void ITask() {
 					Printf("Distance %u\r", PDistance_MM);
 					VL53L1X.ClearInterrupt();
 					VL53L1X.StopMeasurement();
-#endif
 				} else {
-#ifdef VL53L1_my
 					VL53L1X.StartMeasurement();
-#endif
 					temp = true;
 				}
+#endif
 			    break;
 
 #if 0 // ======= USB =======
