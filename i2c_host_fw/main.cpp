@@ -4,14 +4,14 @@
 #include "uart.h"
 #include "shell.h"
 #include "kl_lib.h"
-#include "led.h"
-#include "Sequences.h"
+//#include "led.h"
+//#include "Sequences.h"
 //#include "radio_lvl1.h"
-#include "usb_cdc.h"
+//#include "usb_cdc.h"
 #include "kl_i2c.h"
 
-//#define VL53L1_api_FULL
-#define VL53L1_my
+#define VL53L1_api_FULL
+//#define VL53L1_my
 
 
 #ifdef VL53L1_my
@@ -21,8 +21,8 @@ VL53L1X_t VL53L1X;
 
 #ifdef VL53L1_api_FULL
 #include "vl53l1_api.h"
-#include "vl53l1_platform.h"
-#include "vl53l1_platform_user_data.h"
+//#include "vl53l1_platform.h"
+//#include "vl53l1_platform_user_data.h"
 VL53L1_Dev_t Dev;
 VL53L1_DetectionConfig_t DetectionConfig;
 #else
@@ -43,7 +43,7 @@ void ITask();
 #define CheckMeasurePeriod_MS 500
 
 const PinOutput_t PillPwr {PILL_PWR_PIN};
-LedRGB_t Led { LED_R_PIN, LED_G_PIN, LED_B_PIN };
+//LedRGB_t Led { LED_R_PIN, LED_G_PIN, LED_B_PIN };
 
 TmrKL_t MeasTMR {MS2ST(CheckMeasurePeriod_MS), evtIdCheckMeasure, tktPeriodic};
 #endif
@@ -65,18 +65,18 @@ int main(void) {
     Printf("\r%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-    Led.Init();
-    Led.StartOrRestart(lsqStart);
+//    Led.Init();
+//    Led.StartOrRestart(lsqStart);
 
     PillPwr.Init();
     PillPwr.SetHi();
 
     i2c2.Init();
 
-    UsbCDC.Init();
-    Clk.EnableCRS();
-    Clk.SelectUSBClock_HSI48();
-    UsbCDC.Connect();
+//    UsbCDC.Init();
+//    Clk.EnableCRS();
+//    Clk.SelectUSBClock_HSI48();
+//    UsbCDC.Connect();
 
 	uint8_t Result = retvOk;
 #ifdef VL53L1_api_FULL
@@ -96,7 +96,7 @@ int main(void) {
 	DetectionConfig.Distance.High = 4000;
 	DetectionConfig.Distance.Low = 50;
 	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
-//	Result |= VL53L1_StartMeasurement(&Dev);
+	Result |= VL53L1_StartMeasurement(&Dev);
 #else
 	uint16_t DevAddr = 0x29;
 	chThdSleepMilliseconds(VL53L1_BOOT_COMPLETION_POLLING_TIMEOUT_MS);
@@ -111,8 +111,7 @@ int main(void) {
     else
     	Printf("VL53L1X init Fail\r");
 
-    VL53L1X.StartMeasurement(100);
-
+//    VL53L1X.StartMeasurement(100);
 
 
 #ifdef VL53L1_my
@@ -134,12 +133,21 @@ void ITask() {
         switch(Msg.ID) {
             case evtIdUsbNewCmd:
             case evtIdShellCmd:
-                Led.StartOrRestart(lsqUSBCmd); // After that, falling throug is intentional
+//                Led.StartOrRestart(lsqUSBCmd); // After that, falling throug is intentional
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
 
 			case evtIdCheckMeasure:
+				uint8_t DataReady;
+				VL53L1_GetMeasurementDataReady(&Dev, &DataReady);
+				if (DataReady == 0) {
+					VL53L1_RangingMeasurementData_t RangingData;
+					VL53L1_GetRangingMeasurementData(&Dev, &RangingData);
+					VL53L1_ClearInterruptAndStartMeasurement(&Dev);
+					Printf("Distance %u Status %u\r", RangingData.RangeMilliMeter, RangingData.RangeStatus);
+				}
+
 				static bool temp = true;
 				if (temp) {
 					temp = false;
@@ -165,7 +173,7 @@ void ITask() {
 				}
 			    break;
 
-#if 1 // ======= USB =======
+#if 0 // ======= USB =======
             case evtIdUsbConnect:
                 Printf("USB connect\r");
                 Clk.EnableCRS();
