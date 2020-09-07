@@ -10,16 +10,23 @@
 #include "usb_cdc.h"
 #include "kl_i2c.h"
 
+#define VL53L1_api
+#define VL53L1_my
+
+
+#ifdef VL53L1_my
 #include "VL53L1X.h"
 VL53L1X_t VL53L1X;
+#endif
 
-#define VL53L1_api
 #ifdef VL53L1_api
 #include "vl53l1_api.h"
 #include "vl53l1_platform.h"
 #include "vl53l1_platform_user_data.h"
 VL53L1_Dev_t Dev;
 VL53L1_DetectionConfig_t DetectionConfig;
+#elif VL53L1_api_lite
+
 #endif
 
 #if 1 // ======================== Variables and defines ========================
@@ -71,22 +78,22 @@ int main(void) {
 
 #ifdef VL53L1_api
 //	Dev.I2cHandle = &i2c2;
-	Dev.I2cDevAddr = 0x52;
+	Dev.I2cDevAddr = 0x29;
 	uint8_t Result = retvOk;
 
 	Result |= VL53L1_WaitDeviceBooted(&Dev);
 	Result |= VL53L1_DataInit(&Dev);
 	Result |= VL53L1_StaticInit(&Dev);
-//	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
-//	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_LONG);
-//	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 70000);
-//	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 100);
-//	DetectionConfig.DetectionMode = 0;
-//	DetectionConfig.Distance.CrossMode = 3;
-//	DetectionConfig.IntrNoTarget = 0;
-//	DetectionConfig.Distance.High = 4000;
-//	DetectionConfig.Distance.Low = 50;
-//	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
+	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
+	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_LONG);
+	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 70000);
+	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 100);
+	DetectionConfig.DetectionMode = 0;
+	DetectionConfig.Distance.CrossMode = 3;
+	DetectionConfig.IntrNoTarget = 0;
+	DetectionConfig.Distance.High = 4000;
+	DetectionConfig.Distance.Low = 50;
+	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
 //	Result |= VL53L1_StartMeasurement(&Dev);
 
     if(Result == retvOk)
@@ -97,10 +104,12 @@ int main(void) {
     VL53L1X.StartMeasurement(100);
 
 #else
+#ifdef VL53L1_my
     if(VL53L1X.InitLiteAndStart() == retvOk) {
 //    if(VL53L1X.Init() == retvOk) {
         Printf("VL53L1X Ok\r");
     }
+#endif
 #endif
     MeasTMR.StartOrRestart();
 
@@ -124,6 +133,7 @@ void ITask() {
 				static bool temp = true;
 				if (temp) {
 					temp = false;
+#ifdef VL53L1_my
 					if (VL53L1X.CheckForDataReady()) Printf("DataReady ok\r");
 					uint16_t PDistance_MM;
 					uint8_t RangeStatus;
@@ -133,9 +143,11 @@ void ITask() {
 					Printf("Distance %u\r", PDistance_MM);
 					VL53L1X.ClearInterrupt();
 					VL53L1X.StopMeasurement();
-				}
-				else {
+#endif
+				} else {
+#ifdef VL53L1_my
 					VL53L1X.StartMeasurement();
+#endif
 					temp = true;
 				}
 			    break;
@@ -186,7 +198,7 @@ void OnCmd(Shell_t *PShell) {
     if(PCmd->NameIs("Ping")) {
         PShell->Ack(retvOk);
     }
-
+#if 0
     else if(PCmd->NameIs("help")) {
         PShell->Print("\r\n%S %S\r\n"
                 "Commands:\r\n"
@@ -201,7 +213,7 @@ void OnCmd(Shell_t *PShell) {
     else if(PCmd->NameIs("Scan")) {
         i2c2.ScanBus(PShell);
     }
-#if 0
+
     // W <Addr> <Len <= 108 > (Data1, Data2, ..., DataLen)
     else if(PCmd->NameIs("W")) {
         uint8_t Addr, Len, Data[RW_LEN_MAX];
@@ -251,6 +263,7 @@ void OnCmd(Shell_t *PShell) {
     }
 #endif
     else if(PCmd->NameIs("ChangeInterruptPolarity")) {
+#ifdef VL53L1_my
     	static VLInterruptPolarity_t IntPol = ipLow;
     	if (IntPol == ipLow) {
     		IntPol = ipHigh;
@@ -261,15 +274,17 @@ void OnCmd(Shell_t *PShell) {
 		PShell->Ack(VL53L1X.GetInterruptPolarity(&IntPol));
 		PShell->Print("InterruptPolarity %u\r", IntPol);
 //    	PShell->Ack(VL53L1X.StartMeasurement());
+#endif
     }
 
     else if(PCmd->NameIs("GetDistance")) {
-//    	uint32_t Data;
+#ifdef VL53L1_my
 		uint16_t Distance_MM = 0;
 //		VL53L1X.CheckForDataReady();
 		VL53L1X.GetDistance(&Distance_MM);
 		VL53L1X.ClearInterrupt();
 		PShell->Print("Distance %u\r", Distance_MM);
+#endif
     }
 
     else PShell->Ack(retvCmdUnknown);
