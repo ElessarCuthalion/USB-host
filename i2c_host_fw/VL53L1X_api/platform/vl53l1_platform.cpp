@@ -137,32 +137,32 @@ VL53L1_Error VL53L1_ReadMulti(VL53L1_DEV Dev, uint16_t index, uint8_t *pdata, ui
     return VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, pdata, count);
 }
 
-VL53L1_Error VL53L1_WrByte(VL53L1_DEV Dev, uint16_t ARegAddr, uint8_t AValue) {
-    uint8_t Data[3];
-    Data[0] = ARegAddr >> 8;
-    Data[1] = ARegAddr & 0xFF;
-    Data[2] = AValue;
-    return VL53L1_i2c.Write(Dev->I2cDevAddr, Data, 3);
+VL53L1_Error VL53L1_WrByte(VL53L1_DEV Dev, uint16_t index, uint8_t data) {
+    uint8_t SendData[3];
+    SendData[0] = index >> 8;
+    SendData[1] = index & 0xFF;
+    SendData[2] = data;
+    return VL53L1_i2c.Write(Dev->I2cDevAddr, SendData, 3);
 }
 
-VL53L1_Error VL53L1_WrWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint16_t AValue) {
-    uint8_t Data[3];
-    Data[0] = ARegAddr >> 8;
-    Data[1] = ARegAddr & 0xFF;
-    Data[2] = AValue >> 8;
-    Data[3] = AValue & 0xFF;
-    return VL53L1_i2c.Write(Dev->I2cDevAddr, Data, 4);
+VL53L1_Error VL53L1_WrWord(VL53L1_DEV Dev, uint16_t index, uint16_t data) {
+    uint8_t SendData[3];
+    SendData[0] = index >> 8;
+    SendData[1] = index & 0xFF;
+    SendData[2] = data >> 8;
+    SendData[3] = data & 0xFF;
+    return VL53L1_i2c.Write(Dev->I2cDevAddr, SendData, 4);
 }
 
-VL53L1_Error VL53L1_WrDWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint32_t AValue) {
-    uint8_t Data[5];
-    Data[0] = ARegAddr >> 8;
-    Data[1] = ARegAddr & 0xFF;
-    Data[2] = AValue >> 24;
-    Data[3] = (AValue >> 16) & 0xFF;
-    Data[4] = (AValue >> 8) & 0xFF;
-    Data[5] = AValue & 0xFF;
-    return VL53L1_i2c.Write(Dev->I2cDevAddr, Data, 6);
+VL53L1_Error VL53L1_WrDWord(VL53L1_DEV Dev, uint16_t index, uint32_t data) {
+    uint8_t SendData[5];
+    SendData[0] = index >> 8;
+    SendData[1] = index & 0xFF;
+    SendData[2] = data >> 24;
+    SendData[3] = (data >> 16) & 0xFF;
+    SendData[4] = (data >> 8) & 0xFF;
+    SendData[5] = data & 0xFF;
+    return VL53L1_i2c.Write(Dev->I2cDevAddr, SendData, 6);
 }
 
 VL53L1_Error VL53L1_UpdateByte(VL53L1_DEV Dev, uint16_t index, uint8_t AndData, uint8_t OrData) {
@@ -174,33 +174,33 @@ VL53L1_Error VL53L1_UpdateByte(VL53L1_DEV Dev, uint16_t index, uint8_t AndData, 
     return VL53L1_WrByte(Dev, index, data);
 }
 
-VL53L1_Error VL53L1_RdByte(VL53L1_DEV Dev, uint16_t ARegAddr, uint8_t *APValue) {
+VL53L1_Error VL53L1_RdByte(VL53L1_DEV Dev, uint16_t index, uint8_t *data) {
     uint8_t RegAddr[2];
-    RegAddr[0] = ARegAddr >> 8;
-    RegAddr[1] = ARegAddr & 0xFF;
-	return VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, APValue, 1);
+    RegAddr[0] = index >> 8;
+    RegAddr[1] = index & 0xFF;
+	return VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, data, 1);
 }
 
-VL53L1_Error VL53L1_RdWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint16_t *APValue) {
+VL53L1_Error VL53L1_RdWord(VL53L1_DEV Dev, uint16_t index, uint16_t *data) {
     uint8_t RegAddr[2], ReadData[2];
-    RegAddr[0] = ARegAddr >> 8;
-    RegAddr[1] = ARegAddr & 0x00FF;
+    RegAddr[0] = index >> 8;
+    RegAddr[1] = index & 0xFF;
     VL53L1_Error status = VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, ReadData, 2);
     if (status == VL53L1_ERROR_NONE)
-        *APValue = ((uint16_t)ReadData[0]<<8)|ReadData[1];
+        *data = ((uint16_t)ReadData[0]<<8)|ReadData[1];
     return status;
 }
 
-VL53L1_Error VL53L1_RdDWord(VL53L1_DEV Dev, uint16_t ARegAddr, uint32_t *APValue) {
+VL53L1_Error VL53L1_RdDWord(VL53L1_DEV Dev, uint16_t index, uint32_t *data) {
     uint8_t RegAddr[2], ReadData[4];
-    RegAddr[0] = ARegAddr >> 8;
-    RegAddr[1] = ARegAddr & 0x00FF;
+    RegAddr[0] = index >> 8;
+    RegAddr[1] = index & 0xFF;
     VL53L1_Error status = VL53L1_i2c.WriteRead(Dev->I2cDevAddr, RegAddr, 2, ReadData, 4);
     if (status == VL53L1_ERROR_NONE) {
-        *APValue = (uint32_t)ReadData[0]<<24;
-        *APValue |= (uint32_t)ReadData[1]<<16;
-        *APValue |= (uint16_t)ReadData[2]<<8;
-        *APValue |= ReadData[3];
+        *data = (uint32_t)ReadData[0]<<24;
+        *data |= (uint32_t)ReadData[1]<<16;
+        *data |= (uint16_t)ReadData[2]<<8;
+        *data |= ReadData[3];
     }
     return status;
 }
