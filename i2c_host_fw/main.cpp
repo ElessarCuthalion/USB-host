@@ -11,6 +11,7 @@
 #include "kl_i2c.h"
 
 #define VL53L1_api_FULL
+//#define VL53L1_api_LITE
 //#define VL53L1_my
 
 
@@ -21,12 +22,15 @@ VL53L1X_t VL53L1X;
 
 #ifdef VL53L1_api_FULL
 #include "vl53l1_api.h"
+#include "vl53l1_platform.h"
 VL53L1_Dev_t Dev;
 VL53L1_DetectionConfig_t DetectionConfig;
 #else
+#ifdef VL53L1_api_LITE
 #include "VL53L1X_api.h"
 //#include "vl53l1_platform.h"
 //#include "VL53L1X_calibration.h"
+#endif
 #endif
 
 #if 1 // ======================== Variables and defines ========================
@@ -87,8 +91,8 @@ int main(void) {
 	Result |= VL53L1_StaticInit(&Dev);
 	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
 	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_LONG);
-	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 70000);
-	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 100);
+	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 100000);
+	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 200);
 	DetectionConfig.DetectionMode = 0;
 	DetectionConfig.Distance.CrossMode = 3;
 	DetectionConfig.IntrNoTarget = 0;
@@ -97,6 +101,7 @@ int main(void) {
 	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
 	Result |= VL53L1_StartMeasurement(&Dev);
 #else
+#ifdef VL53L1_api_LITE
 	uint16_t DevAddr = 0x29;
 	chThdSleepMilliseconds(VL53L1_BOOT_COMPLETION_POLLING_TIMEOUT_MS);
 //	VL53L1X_ERROR err = 0;
@@ -105,14 +110,17 @@ int main(void) {
 	Result |= VL53L1X_SetOffset(DevAddr, 10);
 	Result |= VL53L1X_StartRanging(DevAddr);
 #endif
+#endif
+	uint16_t DevID = 0;
+//	Result |= VL53L1_RdWord(&Dev, VL53L1_IDENTIFICATION__MODEL_ID, &DevID);
     if(Result == retvOk)
-    	Printf("VL53L1X init Ok\r");
+    	Printf("VL53L1X init Ok, ID %X\r", DevID);
     else
     	Printf("VL53L1X init Fail\r");
 
 #ifdef VL53L1_my
-    if(VL53L1X.InitLiteAndStart() == retvOk) {
-//    if(VL53L1X.Init() == retvOk) {
+//    if(VL53L1X.InitLiteAndStart() == retvOk) {
+    if(VL53L1X.Init() == retvOk) {
         Printf("VL53L1X Ok\r");
     }
 #endif
@@ -135,19 +143,21 @@ void ITask() {
                 break;
 
 			case evtIdCheckMeasure:
+#ifdef VL53L1_api_FULL
 				uint8_t DataReady;
 				VL53L1_GetMeasurementDataReady(&Dev, &DataReady);
-				if (DataReady == 0) {
+				if (DataReady != 0)
+				{
 					VL53L1_RangingMeasurementData_t RangingData;
 					VL53L1_GetRangingMeasurementData(&Dev, &RangingData);
 					VL53L1_ClearInterruptAndStartMeasurement(&Dev);
 					Printf("Distance %u Status %u\r", RangingData.RangeMilliMeter, RangingData.RangeStatus);
 				}
-
+#endif
 #ifdef VL53L1_my
-				static bool temp = true;
-				if (temp) {
-					temp = false;
+//				static bool temp = true;
+//				if (temp) {
+//					temp = false;
 //					Status = VL53L1X_GetRangeStatus();
 //					Status = VL53L1X_GetDistance();
 //					Status = VL53L1X_ClearInterrupt();
@@ -156,15 +166,14 @@ void ITask() {
 					uint16_t PDistance_MM;
 					uint8_t RangeStatus;
 					VL53L1X.GetRangeStatus(&RangeStatus);
-					Printf("RangeStatus %u\r", RangeStatus);
 					VL53L1X.GetDistance(&PDistance_MM);
-					Printf("Distance %u\r", PDistance_MM);
+					Printf("Distance %u Status %u\r", PDistance_MM, RangeStatus);
 					VL53L1X.ClearInterrupt();
-					VL53L1X.StopMeasurement();
-				} else {
-					VL53L1X.StartMeasurement();
-					temp = true;
-				}
+//					VL53L1X.StopMeasurement();
+//				} else {
+//					VL53L1X.StartMeasurement();
+//					temp = true;
+//				}
 #endif
 			    break;
 
