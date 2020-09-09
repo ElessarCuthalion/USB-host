@@ -24,7 +24,7 @@
 #endif
 
 #define VL53L1_api_FULL
-//#define VL53L1_api_LITE
+#define VL53L1_api_LITE
 //#define VL53L1_my
 
 
@@ -42,7 +42,7 @@ VL53L1_DetectionConfig_t DetectionConfig;
 #ifdef VL53L1_api_LITE
 #include "VL53L1X_api.h"
 //#include "vl53l1_platform.h"
-//#include "VL53L1X_calibration.h"
+uint16_t DevAddr = 0x29;
 #endif
 #endif
 
@@ -123,12 +123,11 @@ int main(void) {
 	Result |= VL53L1_StartMeasurement(&Dev);
 #else
 #ifdef VL53L1_api_LITE
-	uint16_t DevAddr = 0x29;
-	chThdSleepMilliseconds(VL53L1_BOOT_COMPLETION_POLLING_TIMEOUT_MS);
-//	VL53L1X_ERROR err = 0;
+	chThdSleepMilliseconds(500);
 	Result |= VL53L1X_SensorInit(DevAddr);
-	Result |= VL53L1X_SetInterMeasurementInMs(DevAddr, 100);
-	Result |= VL53L1X_SetOffset(DevAddr, 10);
+	Result |= VL53L1X_SetDistanceMode(DevAddr, 1);
+	Result |= VL53L1X_SetTimingBudgetInMs(DevAddr, 100);
+	Result |= VL53L1X_SetInterMeasurementInMs(DevAddr, 200);
 	Result |= VL53L1X_StartRanging(DevAddr);
 #endif
 #endif
@@ -176,6 +175,17 @@ void ITask() {
 					VL53L1_ClearInterruptAndStartMeasurement(&Dev);
 					Printf("Distance %u Status %u\r", RangingData.RangeMilliMeter, RangingData.RangeStatus);
 				}
+#else
+#ifdef VL53L1_api_LITE
+				uint8_t DataReady;
+				VL53L1X_CheckForDataReady(DevAddr, &DataReady);
+				if (DataReady != 0) {
+					VL53L1X_Result_t Result;
+					VL53L1X_GetResult(DevAddr, &Result);
+					Printf("Distance %u Status %u\r", Result.Distance, Result.Status);
+					VL53L1X_ClearInterrupt(DevAddr);
+				}
+#endif
 #endif
 #ifdef VL53L1_my
 //				static bool temp = true;
