@@ -90,15 +90,15 @@ int main(void) {
 	Result |= VL53L1_DataInit(&Dev);
 	Result |= VL53L1_StaticInit(&Dev);
 	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
-	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_LONG);
+	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_SHORT);
 	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 100000);
 	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 200);
-	DetectionConfig.DetectionMode = 0;
-	DetectionConfig.Distance.CrossMode = 3;
-	DetectionConfig.IntrNoTarget = 0;
-	DetectionConfig.Distance.High = 4000;
-	DetectionConfig.Distance.Low = 50;
-	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
+//	DetectionConfig.DetectionMode = 0;
+//	DetectionConfig.Distance.CrossMode = 3;
+//	DetectionConfig.IntrNoTarget = 0;
+//	DetectionConfig.Distance.High = 4000;
+//	DetectionConfig.Distance.Low = 50;
+//	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
 	Result |= VL53L1_StartMeasurement(&Dev);
 #else
 #ifdef VL53L1_api_LITE
@@ -309,6 +309,28 @@ void OnCmd(Shell_t *PShell) {
 		VL53L1X.GetDistance(&Distance_MM);
 		VL53L1X.ClearInterrupt();
 		PShell->Print("Distance %u\r", Distance_MM);
+#endif
+    }
+
+    else if(PCmd->NameIs("RefSPAD_cal")) {
+#ifdef VL53L1_api_FULL
+    	uint8_t Result = retvOk;
+    	Result |= VL53L1_StopMeasurement(&Dev);
+    	Result |= VL53L1_software_reset(&Dev);
+
+    	Result |= VL53L1_WaitDeviceBooted(&Dev);
+    	Result |= VL53L1_DataInit(&Dev);
+    	Result |= VL53L1_StaticInit(&Dev);
+    	Result |= VL53L1_PerformRefSpadManagement(&Dev);
+//    	VL53L1_CalibrationData_t CalibrationData;
+//    	Result |= VL53L1_GetCalibrationData(&Dev, &CalibrationData);
+    	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
+    	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_SHORT);
+    	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 100000);
+    	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 200);
+    	Result |= VL53L1_StartMeasurement(&Dev);
+    	if (Result == retvOk) PShell->Ack(retvOk);
+    	else PShell->Print("Cal Fail\r");
 #endif
     }
 
