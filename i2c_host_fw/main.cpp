@@ -38,6 +38,7 @@ VL53L1X_t VL53L1X;
 #include "vl53l1_platform.h"
 VL53L1_Dev_t Dev;
 VL53L1_DetectionConfig_t DetectionConfig;
+VL53L1_CalibrationData_t CalibrationData;
 #else
 #ifdef VL53L1_api_LITE
 #include "VL53L1X_api.h"
@@ -348,13 +349,13 @@ void OnCmd(Shell_t *PShell) {
     	uint8_t Result = retvOk;
     	Result |= VL53L1_StopMeasurement(&Dev);
     	Result |= VL53L1_software_reset(&Dev);
-
+    	chThdSleepMilliseconds(300);
     	Result |= VL53L1_WaitDeviceBooted(&Dev);
     	Result |= VL53L1_DataInit(&Dev);
     	Result |= VL53L1_StaticInit(&Dev);
     	Result |= VL53L1_PerformRefSpadManagement(&Dev);
-//    	VL53L1_CalibrationData_t CalibrationData;
-//    	Result |= VL53L1_GetCalibrationData(&Dev, &CalibrationData);
+    	Result |= VL53L1_GetCalibrationData(&Dev, &CalibrationData);
+//    	Result |= VL53L1_SetCalibrationData(&Dev, &CalibrationData);
     	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
     	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_SHORT);
     	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 100000);
