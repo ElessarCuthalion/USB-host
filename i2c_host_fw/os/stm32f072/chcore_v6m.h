@@ -173,6 +173,22 @@
 #endif
 
 /*===========================================================================*/
+/* External declarations.                                                    */
+/*===========================================================================*/
+
+#if defined __cplusplus && !defined(_FROM_ASM_)
+extern "C" {
+#endif
+  void _port_irq_epilogue(regarm_t lr);
+  void _port_switch(thread_t *ntp, thread_t *otp);
+  void _port_thread_start(void);
+  void _port_switch_from_isr(void);
+  void _port_exit_from_isr(void);
+#ifdef __cplusplus
+}
+#endif
+
+/*===========================================================================*/
 /* Module data structures and types.                                         */
 /*===========================================================================*/
 
@@ -297,22 +313,6 @@ struct port_intctx {
     chSysHalt("stack overflow");                                            \
   }                                                                         \
   _port_switch(ntp, otp);                                                   \
-}
-#endif
-
-/*===========================================================================*/
-/* External declarations.                                                    */
-/*===========================================================================*/
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void _port_irq_epilogue(regarm_t lr);
-  void _port_switch(thread_t *ntp, thread_t *otp);
-  void _port_thread_start(void);
-  void _port_switch_from_isr(void);
-  void _port_exit_from_isr(void);
-#ifdef __cplusplus
 }
 #endif
 

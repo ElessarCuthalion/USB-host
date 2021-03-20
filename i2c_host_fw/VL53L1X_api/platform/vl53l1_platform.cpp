@@ -146,7 +146,7 @@ VL53L1_Error VL53L1_WrByte(VL53L1_DEV Dev, uint16_t index, uint8_t data) {
 }
 
 VL53L1_Error VL53L1_WrWord(VL53L1_DEV Dev, uint16_t index, uint16_t data) {
-    uint8_t SendData[3];
+    uint8_t SendData[4];
     SendData[0] = index >> 8;
     SendData[1] = index & 0xFF;
     SendData[2] = data >> 8;
@@ -155,7 +155,7 @@ VL53L1_Error VL53L1_WrWord(VL53L1_DEV Dev, uint16_t index, uint16_t data) {
 }
 
 VL53L1_Error VL53L1_WrDWord(VL53L1_DEV Dev, uint16_t index, uint32_t data) {
-    uint8_t SendData[5];
+    uint8_t SendData[6];
     SendData[0] = index >> 8;
     SendData[1] = index & 0xFF;
     SendData[2] = data >> 24;
@@ -210,13 +210,15 @@ VL53L1_Error VL53L1_GetTickCount(uint32_t *ptick_count_ms) {
 	return VL53L1_ERROR_NONE;
 }
 
-//#define trace_print(level, ...) \
-//	_LOG_TRACE_PRINT(VL53L1_TRACE_MODULE_PLATFORM, \
-//	level, VL53L1_TRACE_FUNCTION_NONE, ##__VA_ARGS__)
+/*
+#define trace_print(level, ...) \
+	_LOG_TRACE_PRINT(VL53L1_TRACE_MODULE_PLATFORM, \
+	level, VL53L1_TRACE_FUNCTION_NONE, ##__VA_ARGS__)
 
-//#define trace_i2c(...) \
-//	_LOG_TRACE_PRINT(VL53L1_TRACE_MODULE_NONE, \
-//	VL53L1_TRACE_LEVEL_NONE, VL53L1_TRACE_FUNCTION_I2C, ##__VA_ARGS__)
+#define trace_i2c(...) \
+	_LOG_TRACE_PRINT(VL53L1_TRACE_MODULE_NONE, \
+	VL53L1_TRACE_LEVEL_NONE, VL53L1_TRACE_FUNCTION_I2C, ##__VA_ARGS__)
+*/
 
 VL53L1_Error VL53L1_GetTimerFrequency(int32_t *ptimer_freq_hz) {
 	return VL53L1_ERROR_NOT_IMPLEMENTED;

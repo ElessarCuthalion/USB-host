@@ -145,7 +145,7 @@ int main(void) {
         Printf("VL53L1X Ok\r");
     }
 #endif
-    MeasTMR.StartOrRestart();
+//    MeasTMR.StartOrRestart();
 
     // Main cycle
     ITask();
