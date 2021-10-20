@@ -5,10 +5,10 @@
 #include "shell.h"
 #include "kl_lib.h"
 
-#define I2C_EN
-//#define USB_EN
-//#define RGB_EN
-//#define RADIO_EN
+//#define I2C_EN
+#define USB_EN
+#define RGB_EN
+#define RADIO_EN
 #ifdef I2C_EN
 #include "kl_i2c.h"
 #endif
@@ -23,29 +23,6 @@
 #include "usb_cdc.h"
 #endif
 
-#define VL53L1_api_FULL
-#define VL53L1_api_LITE
-//#define VL53L1_my
-
-
-#ifdef VL53L1_my
-#include "VL53L1X.h"
-VL53L1X_t VL53L1X;
-#endif
-
-#ifdef VL53L1_api_FULL
-#include "vl53l1_api.h"
-#include "vl53l1_platform.h"
-VL53L1_Dev_t Dev;
-VL53L1_DetectionConfig_t DetectionConfig;
-VL53L1_CalibrationData_t CalibrationData;
-#else
-#ifdef VL53L1_api_LITE
-#include "VL53L1X_api.h"
-//#include "vl53l1_platform.h"
-uint16_t DevAddr = 0x29;
-#endif
-#endif
 
 #if 1 // ======================== Variables and defines ========================
 // Forever
@@ -103,50 +80,6 @@ int main(void) {
     }
 #endif
 
-	uint8_t Result = retvOk;
-#ifdef VL53L1_api_FULL
-//	Dev.I2cHandle = &i2c2;
-	Dev.I2cDevAddr = 0x29;
-
-	Result |= VL53L1_WaitDeviceBooted(&Dev);
-	Result |= VL53L1_DataInit(&Dev);
-	Result |= VL53L1_StaticInit(&Dev);
-	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
-	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_SHORT);
-	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 100000);
-	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 200);
-//	DetectionConfig.DetectionMode = 0;
-//	DetectionConfig.Distance.CrossMode = 3;
-//	DetectionConfig.IntrNoTarget = 0;
-//	DetectionConfig.Distance.High = 4000;
-//	DetectionConfig.Distance.Low = 50;
-//	Result |= VL53L1_SetThresholdConfig(&Dev, &DetectionConfig);
-	Result |= VL53L1_StartMeasurement(&Dev);
-#else
-#ifdef VL53L1_api_LITE
-	chThdSleepMilliseconds(500);
-	Result |= VL53L1X_SensorInit(DevAddr);
-	Result |= VL53L1X_SetDistanceMode(DevAddr, 1);
-	Result |= VL53L1X_SetTimingBudgetInMs(DevAddr, 100);
-	Result |= VL53L1X_SetInterMeasurementInMs(DevAddr, 200);
-	Result |= VL53L1X_StartRanging(DevAddr);
-#endif
-#endif
-	uint16_t DevID = 0;
-//	Result |= VL53L1_RdWord(&Dev, VL53L1_IDENTIFICATION__MODEL_ID, &DevID);
-    if(Result == retvOk)
-    	Printf("VL53L1X init Ok, ID %X\r", DevID);
-    else
-    	Printf("VL53L1X init Fail\r");
-
-#ifdef VL53L1_my
-//    if(VL53L1X.InitLiteAndStart() == retvOk) {
-    if(VL53L1X.Init() == retvOk) {
-        Printf("VL53L1X Ok\r");
-    }
-#endif
-//    MeasTMR.StartOrRestart();
-
     // Main cycle
     ITask();
 }
@@ -164,52 +97,6 @@ void ITask() {
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
-
-			case evtIdCheckMeasure:
-#ifdef VL53L1_api_FULL
-				uint8_t DataReady;
-				VL53L1_GetMeasurementDataReady(&Dev, &DataReady);
-				if (DataReady != 0)
-				{
-					VL53L1_RangingMeasurementData_t RangingData;
-					VL53L1_GetRangingMeasurementData(&Dev, &RangingData);
-					VL53L1_ClearInterruptAndStartMeasurement(&Dev);
-					Printf("Distance %u Status %u\r", RangingData.RangeMilliMeter, RangingData.RangeStatus);
-				}
-#else
-#ifdef VL53L1_api_LITE
-				uint8_t DataReady;
-				VL53L1X_CheckForDataReady(DevAddr, &DataReady);
-				if (DataReady != 0) {
-					VL53L1X_Result_t Result;
-					VL53L1X_GetResult(DevAddr, &Result);
-					Printf("Distance %u Status %u\r", Result.Distance, Result.Status);
-					VL53L1X_ClearInterrupt(DevAddr);
-				}
-#endif
-#endif
-#ifdef VL53L1_my
-//				static bool temp = true;
-//				if (temp) {
-//					temp = false;
-//					Status = VL53L1X_GetRangeStatus();
-//					Status = VL53L1X_GetDistance();
-//					Status = VL53L1X_ClearInterrupt();
-
-					if (VL53L1X.CheckForDataReady()) Printf("DataReady ok\r");
-					uint16_t PDistance_MM;
-					uint8_t RangeStatus;
-					VL53L1X.GetRangeStatus(&RangeStatus);
-					VL53L1X.GetDistance(&PDistance_MM);
-					Printf("Distance %u Status %u\r", PDistance_MM, RangeStatus);
-					VL53L1X.ClearInterrupt();
-//					VL53L1X.StopMeasurement();
-//				} else {
-//					VL53L1X.StartMeasurement();
-//					temp = true;
-//				}
-#endif
-			    break;
 
 #ifdef USB_EN // ======= USB =======
             case evtIdUsbConnect:
@@ -234,19 +121,20 @@ void ITask() {
     } // while true
 } // ITask()
 
+#ifdef I2C_EN
 void Standby() {
     i2c2.Standby();
 //    PillPwr.SetLo();
 //    __NOP(); __NOP(); __NOP(); __NOP(); // Allow power to fade
 //    PillPwr.Deinit();
 }
-
 void Resume() {
 //    PillPwr.Init();
 //    PillPwr.SetHi();
 //    __NOP(); __NOP(); __NOP(); __NOP(); // Allow power to rise
     i2c2.Resume();
 }
+#endif
 
 #if 1 // ================= Command processing ====================
 void OnCmd(Shell_t *PShell) {
@@ -257,7 +145,7 @@ void OnCmd(Shell_t *PShell) {
     if(PCmd->NameIs("Ping")) {
         PShell->Ack(retvOk);
     }
-#ifdef I2C_EN0
+#ifdef I2C_EN
     else if(PCmd->NameIs("help")) {
         PShell->Print("\r\n%S %S\r\n"
                 "Commands:\r\n"
@@ -318,53 +206,6 @@ void OnCmd(Shell_t *PShell) {
         else PShell->Ack(retvCmdError);
     }
 #endif
-
-    else if(PCmd->NameIs("ChangeInterruptPolarity")) {
-#ifdef VL53L1_my
-    	static VLInterruptPolarity_t IntPol = ipLow;
-    	if (IntPol == ipLow) {
-    		IntPol = ipHigh;
-    	} else {
-    		IntPol = ipLow;
-    	}
-		PShell->Ack(VL53L1X.SetInterruptPolarity(IntPol));
-		PShell->Ack(VL53L1X.GetInterruptPolarity(&IntPol));
-		PShell->Print("InterruptPolarity %u\r", IntPol);
-//    	PShell->Ack(VL53L1X.StartMeasurement());
-#endif
-    }
-
-    else if(PCmd->NameIs("GetDistance")) {
-#ifdef VL53L1_my
-		uint16_t Distance_MM = 0;
-//		VL53L1X.CheckForDataReady();
-		VL53L1X.GetDistance(&Distance_MM);
-		VL53L1X.ClearInterrupt();
-		PShell->Print("Distance %u\r", Distance_MM);
-#endif
-    }
-
-    else if(PCmd->NameIs("RefSPAD_cal")) {
-#ifdef VL53L1_api_FULL
-    	uint8_t Result = retvOk;
-    	Result |= VL53L1_StopMeasurement(&Dev);
-    	Result |= VL53L1_software_reset(&Dev);
-    	chThdSleepMilliseconds(300);
-    	Result |= VL53L1_WaitDeviceBooted(&Dev);
-    	Result |= VL53L1_DataInit(&Dev);
-    	Result |= VL53L1_StaticInit(&Dev);
-    	Result |= VL53L1_PerformRefSpadManagement(&Dev);
-    	Result |= VL53L1_GetCalibrationData(&Dev, &CalibrationData);
-//    	Result |= VL53L1_SetCalibrationData(&Dev, &CalibrationData);
-    	Result |= VL53L1_SetPresetMode(&Dev, VL53L1_PRESETMODE_AUTONOMOUS);
-    	Result |= VL53L1_SetDistanceMode(&Dev, VL53L1_DISTANCEMODE_SHORT);
-    	Result |= VL53L1_SetMeasurementTimingBudgetMicroSeconds(&Dev, 100000);
-    	Result |= VL53L1_SetInterMeasurementPeriodMilliSeconds(&Dev, 200);
-    	Result |= VL53L1_StartMeasurement(&Dev);
-    	if (Result == retvOk) PShell->Ack(retvOk);
-    	else PShell->Print("Cal Fail\r");
-#endif
-    }
 
     else PShell->Ack(retvCmdUnknown);
 }
