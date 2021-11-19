@@ -49,6 +49,15 @@ static void rLvl1Thread(void *arg) {
             if(UsbCDC.IsActive()) {
                 UsbCDC.Print("%d;%d;%d;%d;%d;%d;%d;%d\r\n", PktRx.Time, PktRx.Btn, PktRx.gyro[0], PktRx.gyro[1], PktRx.gyro[2], PktRx.acc[0], PktRx.acc[1], PktRx.acc[2]);
             }
+//            Printf("%d\r", Rssi);
+//            Clr = clWhite;
+//            if     (Rssi < -100) Clr = clRed;
+//            else if(Rssi < -90) Clr = clYellow;
+//            else if(Rssi < -80) Clr = clGreen;
+//            else if(Rssi < -70) Clr = clCyan;
+//            else if(Rssi < -60) Clr = clBlue;
+//            else if(Rssi < -50) Clr = clMagenta;
+//            Led.SetColor(Clr);
         }
     }
 }
